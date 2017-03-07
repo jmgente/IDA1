@@ -344,5 +344,10 @@ namespace IDA1
                     return;
             }
         }
+
+        private void btnFlujo_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -43,25 +43,6 @@ namespace IDA1
             OCLUSION,       //Realizando prueba de oclusion
             BUSCANDO_IDA,
         }
-        //public struct DatosRecogidos
-        //{
-        //    public double Tiempo;
-        //    public short Presion;
-        //    public double Volumen;
-        //    public IDA_RESULT resultado;
-        //    public bool aire;
-        //    public EstadoIDA estado;
-
-        //    public DatosRecogidos( EstadoIDA estado)
-        //    {
-        //        Tiempo = -1;
-        //        Presion = -1;
-        //        Volumen = -1;
-        //        resultado = IDA_RESULT.IDA_OK;
-        //        aire = false;
-        //        this.estado = estado;
-        //    }
-        //}
 
     #region Eventos Implementacion
         public class MedidaRecibidaEventArgs : EventArgs

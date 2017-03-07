@@ -30,6 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.label13 = new System.Windows.Forms.Label();
             this.btnStopFlow = new System.Windows.Forms.Button();
             this.lblPresion = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
@@ -111,7 +112,6 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.backgroundWorkerPat = new System.ComponentModel.BackgroundWorker();
             this.backgroundWorkerChekPat = new System.ComponentModel.BackgroundWorker();
-            this.label13 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -154,6 +154,17 @@
             this.splitContainer1.Size = new System.Drawing.Size(769, 598);
             this.splitContainer1.SplitterDistance = 262;
             this.splitContainer1.TabIndex = 0;
+            // 
+            // label13
+            // 
+            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label13.Location = new System.Drawing.Point(155, 156);
+            this.label13.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(58, 20);
+            this.label13.TabIndex = 27;
+            this.label13.Text = "mmHg";
+            this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnStopFlow
             // 
@@ -208,11 +219,12 @@
             this.btnFlujo.TabIndex = 22;
             this.btnFlujo.Text = "FLUJO";
             this.btnFlujo.UseVisualStyleBackColor = true;
+            this.btnFlujo.Click += new System.EventHandler(this.btnFlujo_Click);
             // 
             // progressBar1
             // 
             this.progressBar1.Location = new System.Drawing.Point(142, 42);
-            this.progressBar1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.progressBar1.Margin = new System.Windows.Forms.Padding(2);
             this.progressBar1.MarqueeAnimationSpeed = 50;
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(112, 19);
@@ -340,7 +352,7 @@
             this.tabPage1.Controls.Add(this.textBoxFecha);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage1.Size = new System.Drawing.Size(493, 570);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Hoja Intro";
@@ -578,8 +590,8 @@
             this.tabPage2.Controls.Add(this.checkBoxNApto1);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
-            this.tabPage2.Size = new System.Drawing.Size(477, 570);
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(493, 570);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Preventivo";
             // 
@@ -935,8 +947,8 @@
             // 
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
-            this.tabPage3.Size = new System.Drawing.Size(477, 570);
+            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage3.Size = new System.Drawing.Size(493, 570);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Resolución";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -945,10 +957,10 @@
             // 
             this.tabPage4.Controls.Add(this.dataGridViewDepura);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
-            this.tabPage4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPage4.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabPage4.Size = new System.Drawing.Size(477, 570);
+            this.tabPage4.Padding = new System.Windows.Forms.Padding(2);
+            this.tabPage4.Size = new System.Drawing.Size(493, 570);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "tabPage4";
             this.tabPage4.UseVisualStyleBackColor = true;
@@ -957,7 +969,7 @@
             // 
             this.dataGridViewDepura.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewDepura.Location = new System.Drawing.Point(14, 33);
-            this.dataGridViewDepura.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.dataGridViewDepura.Margin = new System.Windows.Forms.Padding(2);
             this.dataGridViewDepura.Name = "dataGridViewDepura";
             this.dataGridViewDepura.RowTemplate.Height = 24;
             this.dataGridViewDepura.Size = new System.Drawing.Size(453, 316);
@@ -977,17 +989,6 @@
             this.backgroundWorkerChekPat.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerChekPat_DoWork);
             this.backgroundWorkerChekPat.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorkerChekPat_ProgressChanged);
             this.backgroundWorkerChekPat.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorkerChekPat_RunWorkerCompleted);
-            // 
-            // label13
-            // 
-            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(155, 156);
-            this.label13.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(58, 20);
-            this.label13.TabIndex = 27;
-            this.label13.Text = "mmHg";
-            this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // Form1
             // 
