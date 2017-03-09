@@ -305,51 +305,6 @@ namespace IDA1
                 resp = ReadLine();
                 if (resp.StartsWith("[STAT,"))
                 {
-                    if( resp.Length < 18 )
-                    {
-                        return IDA_RESULT.IDA_FALLO_PATRON;
-                    }
-
-                    switch (resp[6])
-                    {
-                        case ' ':   //En STANDBY
-                        case 'O':   //Oclusion terminada. Estado STANDBY.¿Oclusion en memoria?
-                        case 'V':   //Flujo terminado. Estado STANDBY. ¿Flujo en memoria?
-                            Estado = EstadoIDA.CONECTADO;
-                            break;
-                        case 'T':   //Preparando para oclusion
-                            Estado = EstadoIDA.PRE_OCLUSION;
-                            break;
-                        case 'o':   //Realizando oclusion
-                            Estado = EstadoIDA.OCLUSION;
-                            break;
-                        case 'F':   //Preparando para flujo
-                            Estado = EstadoIDA.PRE_FLUJO;
-                            break;
-                        case 'v':   //Realizando prueba de flujo
-                            Estado = EstadoIDA.FLUJO;
-                            break;
-                        default:
-                            return IDA_RESULT.IDA_FALLO_PATRON;
-                    }
-
-                    switch (resp[10])
-                    {
-                        case 'O':   //Realizando oclusion
-                            Estado = EstadoIDA.OCLUSION;
-                            break;
-                        case 'F':   //Realizando prueba de flujo
-                            Estado = EstadoIDA.FLUJO;
-                            break;
-                        case ' ':   //En STANDBY
-                            Estado = EstadoIDA.CONECTADO;
-                            break;
-                        default:
-                            return IDA_RESULT.IDA_FALLO_PATRON;
-                    }
-
-                    if (resp[14] == 'a' || resp[14] == 'b') HayAire = true;
-                    else HayAire = false;
 
                 }
                 else  return IDA_RESULT.IDA_FALLO_PATRON;

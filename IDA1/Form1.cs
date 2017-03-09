@@ -347,10 +347,7 @@ namespace IDA1
 
         private void btnFlujo_Click(object sender, EventArgs e)
         {
-            InicioFlujo inicia = new InicioFlujo();
-            if (inicia.ShowDialog(this) == DialogResult.Cancel) return;
 
-            btnFlujo.Enabled = false;
         }
     }
 }
