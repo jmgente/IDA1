@@ -31,6 +31,8 @@ namespace IDA1
             IDA_SIN_RESPUESTA,
             IDA_FALLO_PATRON,
             IDA_COMANDO_DESCONOCIDO,
+            IDA_LECTURA_ERRONEA,
+            IDA_RESPUESTA_ERRONEA,
         }
         public enum EstadoIDA
         {
@@ -572,13 +574,15 @@ namespace IDA1
         /// <returns></returns>
         public IDA_RESULT FinalizaFlujo()
         {
-            string resp;
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
 
             try
             {
                 puerto.WriteLine("[END,1]");
-                resp = ReadLine();
+                resp = ReadLine(ref comandos);
 
+                if( comandos.Count > 1 || )
                 if (resp == "[OK]")
                 {
                     Estado = EstadoIDA.CONECTADO;
@@ -638,7 +642,11 @@ namespace IDA1
                 return IDA_RESULT.IDA_SIN_RESPUESTA;
             }
 
-            if (respuesta != "[LOG,1,0,0,0]") return IDA_RESULT.IDA_FALLO_PATRON;
+            if (respuesta != "[LOG,1,0,0,0]")
+            {
+                Debug.WriteLine("ConectaPatron: Respuesta recibida erronea -> " + respuesta);
+                return IDA_RESULT.IDA_RESPUESTA_ERRONEA;
+            }
 
             //Iniciada conexion correctamente
             Estado = EstadoIDA.CONECTADO;
@@ -661,7 +669,7 @@ namespace IDA1
                         Estado == EstadoIDA.PRE_OCLUSION)
                     {
                         puerto.WriteLine("[END,1]");
-                        try { ReadLine(); } catch(TimeoutException) { }
+                        try { List<string> respuesta = null; ReadLine(ref respuesta); } catch(TimeoutException) { }
                     }
 
                     puerto.WriteLine("[BYE]");
@@ -674,18 +682,41 @@ namespace IDA1
 
         #endregion
 
-        private string ReadLine()
+        /// <summary>
+        /// Lee los datos recibidos del patron. Si es una medida, la procesa y proboca el evento <see cref="MedidaRecibida"/>
+        /// <para>Devuleve <see cref="IDA_RESULT.IDA_OK"/> o <see cref="IDA_RESULT.IDA_LECTURA_ERRONEA"/></para>
+        /// </summary>
+        /// <param name="comandos"> Referencia de un List<string> donde se guardaran los camandos recibidos.</param>
+        /// <returns><see cref="IDA_RESULT.IDA_OK"/> o <see cref="IDA_RESULT.IDA_LECTURA_ERRONEA"/></returns>
+        private IDA_RESULT ReadLine(ref List<string> comandos)
         {
             string resp;
 
-            resp = puerto.ReadLine();
-            while (resp.StartsWith("1"))
+            do
             {
-                
-                OnMedidaRecibida( ProcesaDatos(resp));
                 resp = puerto.ReadLine();
-            }
-            return resp;
+                while (resp[0] == '1')
+                {
+                    if(resp.Length != 22)
+                    {
+                        Debug.WriteLine("Lectura de medida erronea -> " + resp);
+                        return IDA_RESULT.IDA_LECTURA_ERRONEA;
+                    }
+
+                    OnMedidaRecibida(ProcesaDatos(resp));
+                    resp = puerto.ReadLine();
+                }
+
+                if (resp[0] == '[') comandos.Add(resp);
+                else
+                {
+                    Debug.WriteLine("Lectura erronea -> " + resp);
+                    return IDA_RESULT.IDA_LECTURA_ERRONEA;
+                }
+
+            } while (puerto.BytesToRead > 0);
+
+            return IDA_RESULT.IDA_OK;
         }
     }
 }

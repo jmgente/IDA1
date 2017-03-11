@@ -120,6 +120,7 @@ namespace IDA1
 
             btnStopOclu.Enabled = false;
             btnOclusion.Enabled = true;
+            btnFlujo.Enabled = true;
 
             result = EnviaComandoPatron(ComandosPatron.FINALIZA_OCLUSION);
             if (result != IDA_RESULT.IDA_OK)
