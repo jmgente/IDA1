@@ -30,6 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.lblAptoFlujo = new System.Windows.Forms.Label();
+            this.lblAptoOclusion = new System.Windows.Forms.Label();
             this.label13 = new System.Windows.Forms.Label();
             this.btnStopFlow = new System.Windows.Forms.Button();
             this.lblPresion = new System.Windows.Forms.Label();
@@ -133,6 +135,8 @@
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.lblAptoFlujo);
+            this.splitContainer1.Panel1.Controls.Add(this.lblAptoOclusion);
             this.splitContainer1.Panel1.Controls.Add(this.label13);
             this.splitContainer1.Panel1.Controls.Add(this.btnStopFlow);
             this.splitContainer1.Panel1.Controls.Add(this.lblPresion);
@@ -155,10 +159,32 @@
             this.splitContainer1.SplitterDistance = 262;
             this.splitContainer1.TabIndex = 0;
             // 
+            // lblAptoFlujo
+            // 
+            this.lblAptoFlujo.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAptoFlujo.Location = new System.Drawing.Point(162, 210);
+            this.lblAptoFlujo.Name = "lblAptoFlujo";
+            this.lblAptoFlujo.Size = new System.Drawing.Size(93, 20);
+            this.lblAptoFlujo.TabIndex = 29;
+            this.lblAptoFlujo.Text = "NO APTO";
+            this.lblAptoFlujo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblAptoFlujo.TextChanged += new System.EventHandler(this.lblApto_TextChanged);
+            // 
+            // lblAptoOclusion
+            // 
+            this.lblAptoOclusion.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAptoOclusion.Location = new System.Drawing.Point(161, 94);
+            this.lblAptoOclusion.Name = "lblAptoOclusion";
+            this.lblAptoOclusion.Size = new System.Drawing.Size(93, 20);
+            this.lblAptoOclusion.TabIndex = 28;
+            this.lblAptoOclusion.Text = "NO APTO";
+            this.lblAptoOclusion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblAptoOclusion.TextChanged += new System.EventHandler(this.lblApto_TextChanged);
+            // 
             // label13
             // 
             this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(155, 156);
+            this.label13.Location = new System.Drawing.Point(139, 150);
             this.label13.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(58, 20);
@@ -176,14 +202,15 @@
             this.btnStopFlow.TabIndex = 26;
             this.btnStopFlow.Text = "STOP";
             this.btnStopFlow.UseVisualStyleBackColor = true;
+            this.btnStopFlow.Click += new System.EventHandler(this.btnStopFlow_Click);
             // 
             // lblPresion
             // 
             this.lblPresion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblPresion.Location = new System.Drawing.Point(106, 156);
+            this.lblPresion.Location = new System.Drawing.Point(102, 150);
             this.lblPresion.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblPresion.Name = "lblPresion";
-            this.lblPresion.Size = new System.Drawing.Size(54, 20);
+            this.lblPresion.Size = new System.Drawing.Size(42, 20);
             this.lblPresion.TabIndex = 25;
             this.lblPresion.Text = "0";
             this.lblPresion.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -192,7 +219,7 @@
             // 
             this.label12.AutoSize = true;
             this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label12.Location = new System.Drawing.Point(29, 156);
+            this.label12.Location = new System.Drawing.Point(29, 152);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(61, 16);
             this.label12.TabIndex = 24;
@@ -202,7 +229,7 @@
             // 
             this.lblTiempoOc.AutoSize = true;
             this.lblTiempoOc.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTiempoOc.Location = new System.Drawing.Point(130, 127);
+            this.lblTiempoOc.Location = new System.Drawing.Point(103, 127);
             this.lblTiempoOc.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblTiempoOc.Name = "lblTiempoOc";
             this.lblTiempoOc.Size = new System.Drawing.Size(56, 16);
@@ -211,7 +238,6 @@
             // 
             // btnFlujo
             // 
-            this.btnFlujo.Enabled = false;
             this.btnFlujo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFlujo.Location = new System.Drawing.Point(19, 209);
             this.btnFlujo.Name = "btnFlujo";
@@ -1103,6 +1129,8 @@
         private System.Windows.Forms.Label lblTiempoOc;
         private System.Windows.Forms.Button btnStopFlow;
         private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Label lblAptoFlujo;
+        private System.Windows.Forms.Label lblAptoOclusion;
     }
 }
 

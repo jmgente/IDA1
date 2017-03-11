@@ -4,22 +4,51 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
+
 namespace IDA1
-{
+{   
+     
     class Prueba : INotifyPropertyChanged
     {
+        #region Constantes de configuracion de la prueba
+        /// <summary>
+        /// Limite de tiempo para la oclusion en milisegundos.
+        /// </summary>
+        public const double LIMITE_TIEMPO_OCLUSION = 120000;
+        /// <summary>
+        /// Limite de volumen al que se detendra la prueba de flujo. En ul
+        /// </summary>
+        public const double LIMITE_VOLUMEN_FLUJO = 3000;
+        /// <summary>
+        /// Flujo medio al que se realiza la prueba en ml/h.
+        /// </summary>
+        public const double FLUJO_MEDIO = 10;
+        /// <summary>
+        /// Porcentage de error permitido.
+        /// </summary>
+        public const double FLUJO_PORCENTAGE_ERROR = 13;
+        /// <summary>
+        /// El limite absoluto de error superior.
+        /// </summary>
+        public const double FLUJO_LIMITE_UP = FLUJO_MEDIO + (FLUJO_MEDIO * FLUJO_PORCENTAGE_ERROR / 100);
+        /// <summary>
+        /// El limite absoluto de error inferior.
+        /// </summary>
+        public const double FLUJO_LIMITE_DOWN = FLUJO_MEDIO - (FLUJO_MEDIO * FLUJO_PORCENTAGE_ERROR / 100);
+        #endregion
+
         /// <summary>
         /// Contiene los datos de una medida de oclusion.
         /// </summary>
-        public class DatoOclusion
+        public class DatoOclusion : INotifyPropertyChanged
         {
+
             #region Implementacion de INotifyPropertyChanged
             public event PropertyChangedEventHandler PropertyChanged;
             private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
-
             #endregion
 
             private TimeSpan tiempo;
@@ -46,6 +75,7 @@ namespace IDA1
                 Tiempo = TimeSpan.FromMilliseconds(tiemp); 
                 Presion = pres;
             }
+
         }
         /// <summary>
         /// Contiene los datos de una medida de flujo.
@@ -90,20 +120,51 @@ namespace IDA1
         List<DatoVolumen> datosVolumen = new List<DatoVolumen>();
         DateTime inicioOclusion;
         DateTime inicioFlujo;
-
-
+        private bool esAptaOclusion;
+        private bool esAptoFlujo;
+        private bool hayOclusion;
+        private bool hayFlujo;
         #endregion
 
         #region Propiedades declaracion
-        public bool HayOclusion { get; set; }
-        public bool HayFlujo { get; set; }
+        //Datos de la oclusion
+        public bool HayOclusion
+        {
+            get { return hayOclusion; }
+            set { hayOclusion = value; NotifyPropertyChanged(); }
+        }
         public DateTime InicioOclusion { get { return inicioOclusion; } }
-        public DateTime InicioFlujo { get { return inicioFlujo; } }
-        public DateTime InicioPrueba => (inicioFlujo < inicioOclusion) ? inicioFlujo : inicioOclusion;
         public List<DatoOclusion> DatosOclusion { get { return datosOclusion; } }
-        public List<DatoVolumen> DatosFlujo { get { return datosVolumen; } }
         public TimeSpan DuracionOclusion { get; private set; }
         public int PresionMaxima { get; private set; }
+        public bool EsAptaOclusion
+        {
+            get { return esAptaOclusion; }
+            set { esAptaOclusion = value; NotifyPropertyChanged("TextAptoOclu"); }
+        }
+        public string TextAptoOclu { get { return (EsAptaOclusion) ? "Apto" : "No Apto"; } }
+        //Datos del flujo
+        public bool HayFlujo
+        {
+            get { return hayFlujo; }
+            set { hayFlujo = value; NotifyPropertyChanged(); }
+        }
+        public DateTime InicioFlujo { get { return inicioFlujo; } }
+        public List<DatoVolumen> DatosFlujo { get { return datosVolumen; } }
+        public bool EsAptoFlujo
+        {
+            get { return esAptoFlujo; }
+            set { esAptoFlujo = value; NotifyPropertyChanged("TextAptoFlujo"); }
+        }
+        public TimeSpan DuracionFlujo { get; private set; }
+        public double FlujoMedio { get; private set; }
+        public double MaxFlujoInst { get; private set; }
+        public double MinFlujoInst { get; private set; }
+        public string TextAptoFlujo => (EsAptoFlujo) ? "Apto" : "No Apto";
+        //Datos generales de la prueba
+        public DateTime InicioPrueba => (inicioFlujo < inicioOclusion) ? inicioFlujo : inicioOclusion;
+
+
 
         #endregion
 
@@ -118,6 +179,8 @@ namespace IDA1
 
         public void AddDatoOclusion(DatoOclusion dato)
         {
+            if (HayOclusion) return;   //Si ya ha terminado la prueba no añaede mas datos
+
             if (datosOclusion.Count == 0) inicioOclusion = DateTime.Now;
             datosOclusion.Add(dato);
             DuracionOclusion = dato.Tiempo;
@@ -133,6 +196,8 @@ namespace IDA1
         /// <param name="presion">Valor de presion en mmHg</param>
         public void AddDatoOclusion(double tiempo, int presion)
         {
+            if (HayOclusion) return;   //Si ya ha terminado la prueba no añaede mas datos
+
             if (datosOclusion.Count == 0) inicioOclusion = DateTime.Now;
             datosOclusion.Add(new DatoOclusion(tiempo, presion));
             DuracionOclusion = TimeSpan.FromMilliseconds(tiempo);
@@ -144,6 +209,8 @@ namespace IDA1
 
         public void AddDatoVolumen(DatoVolumen dato)
         {
+            if (HayFlujo) return;   //Si ya ha terminado la prueba no añaede mas datos
+
             DatoVolumen datoAnterior = new DatoVolumen();
 
             if (datosVolumen.Count() > 0) datoAnterior = datosVolumen.Last();
@@ -161,6 +228,8 @@ namespace IDA1
         /// <param name="volumen">Volumen medido en ml (total desde que se inicio la prueba hasta la medida)</param>
         public void AddDatoVolumen(double tiempo, double volumen)
         {
+            if (HayFlujo) return;   //Si ya ha terminado la prueba no añaede mas datos
+
             DatoVolumen datoAnterior = new DatoVolumen();
             DatoVolumen dato = new DatoVolumen(tiempo, volumen);   //Tiempo de milisegundos a horas
 
@@ -173,22 +242,55 @@ namespace IDA1
             datosVolumen.Add(dato);
         }
 
-        internal void OclusionFinalizada(bool ok)
+        /// <summary>
+        /// Da por finalizada la prueba de oclusion y realiza los calculos con los datos recogidos.
+        /// <para>Devuleve <see cref="true"/> si la prueba es APTA. <see cref="false"/> si NO APTA </para>
+        /// </summary>
+        internal bool OclusionFinalizada()
         {
-            if (!ok)
-            {
-                datosOclusion.Clear();
-                inicioOclusion = DateTime.MinValue;
-                DuracionOclusion = TimeSpan.Zero;
-                PresionMaxima = 0;
-                HayOclusion = false;
-                return;
-            }
-
             HayOclusion = true;
             DuracionOclusion = datosOclusion.Last().Tiempo;
+            PresionMaxima = DatosOclusion.Max( d => d.Presion );
+            EsAptaOclusion = (DuracionOclusion.TotalMilliseconds <= LIMITE_TIEMPO_OCLUSION) ? true : false;
+            return EsAptaOclusion;
         }
 
+        internal void BorraOclusion()
+        {
+            datosOclusion.Clear();
+            inicioOclusion = DateTime.MinValue;
+            DuracionOclusion = TimeSpan.Zero;
+            PresionMaxima = 0;
+            HayOclusion = false;
+            EsAptaOclusion = false;
+            return;
+        }
+
+        /// <summary>
+        /// Da por finalizada la prueba de flujo y realiza los calculos con los datos recogidos.
+        /// <para>Devuleve <see cref="true"/> si la prueba es APTA. <see cref="false"/> si NO APTA </para>
+        /// </summary>
+        internal bool FlujoFinalizado()
+        {
+            HayFlujo = true;
+            DuracionFlujo = DatosFlujo.Last().Tiempo;
+            FlujoMedio = DatosFlujo.Last().Volumen / DatosFlujo.Last().Tiempo.TotalHours;
+            EsAptoFlujo = ( (FlujoMedio > FLUJO_LIMITE_DOWN) && (FlujoMedio < FLUJO_LIMITE_UP) ) ? true : false;
+            MaxFlujoInst = DatosFlujo.Max(d => d.FlujoInstant);
+            MinFlujoInst = DatosFlujo.Min(d => d.FlujoInstant);
+            return EsAptoFlujo;
+        }
+
+        internal void BorraFlujo()
+        {
+            HayFlujo = false;
+            DuracionFlujo = TimeSpan.Zero;
+            inicioFlujo = DateTime.MinValue;
+            FlujoMedio = 0;
+            EsAptoFlujo = false;
+            MaxFlujoInst = 0;
+            MinFlujoInst = 0;
+        }
     }
 
 

@@ -10,15 +10,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using FTD2XX_NET;
 using System.Threading;
+using static IDA1.PatronIDA1S;
 
 namespace IDA1
 {
     public partial class Form1 : Form
     {
-        #region Constantes de configuracion de la prueba
-        const double LIMITE_TIEMPO_OCLUSION = 2;
-
-        #endregion
 
         enum ComandosPatron
         {
@@ -32,10 +29,11 @@ namespace IDA1
             FINALIZA_FLUJO,
         }
 
-        PatronIDA1S patron;
+        internal PatronIDA1S patron;
         Prueba prueba;
         private bool checkStatusActivo = false;
         private bool detenCheckStatus = false;
+
 
         public Form1()
         {
@@ -46,7 +44,11 @@ namespace IDA1
 
             lblTiempoOc.DataBindings.Add("Text", prueba, "DuracionOclusion");
             lblPresion.DataBindings.Add("Text", prueba, "PresionMaxima");
-            dataGridViewDepura.DataSource = prueba.DatosOclusion;
+            lblAptoFlujo.DataBindings.Add("Text", prueba, "TextAptoFlujo");
+            lblAptoFlujo.DataBindings.Add("Visible", prueba, "HayFlujo");
+            lblAptoOclusion.DataBindings.Add("Text", prueba, "TextAptoOclu");
+            lblAptoOclusion.DataBindings.Add("Visible", prueba, "HayOclusion");
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -71,10 +73,22 @@ namespace IDA1
 
         private void btnOclusion_Click(object sender, EventArgs e)
         {
-            PatronIDA1S.IDA_RESULT resultado;
+            IDA_RESULT resultado;
+            DialogResult result;
+            
+
+            if (prueba.HayOclusion)     //Si ya hay ya hay una prueba hecha se advierte al usuario
+            {
+                result = MessageBox.Show("Ya existe una prueba de oclusión guardada. Si continuas se perdera.\r\n" + 
+                                "               ¿Quieres continuar?", "Sobrescribir prueba de oclusión"
+                                , MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+
+                if (result == DialogResult.No) return;      //Volvemos sin hacer nada
+                prueba.BorraOclusion(); //Borra la prueba actual para poder hacer una nueva
+            }
 
             resultado = EnviaComandoPatron(ComandosPatron.PREPARA_OCLUSION);
-            if ( resultado != PatronIDA1S.IDA_RESULT.IDA_OK)
+            if ( resultado != IDA_RESULT.IDA_OK)
             {
                 MessageBox.Show("Fallo en el inicio del patron", "Error en el patron");
                 PatronDesconectado();
@@ -100,6 +114,115 @@ namespace IDA1
             btnFlujo.Enabled = false;
         }
         
+        private void btnStopOclu_Click(object sender, EventArgs e)
+        {
+            IDA_RESULT result;
+
+            btnStopOclu.Enabled = false;
+            btnOclusion.Enabled = true;
+
+            result = EnviaComandoPatron(ComandosPatron.FINALIZA_OCLUSION);
+            if (result != IDA_RESULT.IDA_OK)
+            {
+                MessageBox.Show("Fallo al finalizar la oclusion.\r\n" + result);
+                prueba.BorraOclusion();
+                PatronDesconectado();
+                return;
+            }
+
+            if (!prueba.OclusionFinalizada())
+            {
+                DialogResult resultado = MessageBox.Show("La prueba de oclusion dio NO APTO.\r\n" +
+                                    "¿Quieres guardarla?", "¡¡¡ NO APTO !!!",
+                                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (resultado == DialogResult.No)
+                {
+                    prueba.BorraOclusion();
+                    PatronConectado();
+                }
+            }
+        }
+
+        private void btnFlujo_Click(object sender, EventArgs e)
+        {
+            IDA_RESULT resultado;
+            DialogResult result;
+
+            if (prueba.HayFlujo)     //Si ya hay ya hay una prueba hecha se advierte al usuario
+            {
+                result = MessageBox.Show("Ya existe una prueba de flujo guardada. Si continuas se perdera.\r\n" +
+                                "               ¿Quieres continuar?", "Sobrescribir prueba de flujo"
+                                , MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+
+                if (result == DialogResult.No) return;      //Volvemos sin hacer nada
+                prueba.BorraFlujo(); //Borra la prueba actual para poder hacer una nueva
+            }
+
+            resultado = EnviaComandoPatron(ComandosPatron.PREPARA_FLUJO);
+            if (resultado != IDA_RESULT.IDA_OK)
+            {
+                MessageBox.Show("Fallo al preparar prueba de flujo.\r\n" + resultado);
+                PatronDesconectado();
+                return;
+            }
+
+            InicioFlujo inicia = new InicioFlujo();
+            inicia.llamador = this;
+
+            if (inicia.ShowDialog(this) == DialogResult.Cancel)
+            {
+                resultado = EnviaComandoPatron(ComandosPatron.FINALIZA_FLUJO);
+                if (resultado != IDA_RESULT.IDA_OK)
+                {
+                    MessageBox.Show("Fallo al cancelar la prueba de flujo.\r\n" + resultado);
+                    PatronDesconectado();
+                }
+
+                return;
+            }
+
+            resultado = EnviaComandoPatron(ComandosPatron.INICIA_FLUJO);
+            if (resultado != IDA_RESULT.IDA_OK)
+            {
+                MessageBox.Show("Fallo al iniciar la prueba de flujo.\r\n" + resultado);
+                PatronDesconectado();
+                return;
+            }
+
+            btnFlujo.Enabled = false;
+            btnStopFlow.Enabled = true;
+            btnOclusion.Enabled = false;
+        }
+
+        private void btnStopFlow_Click(object sender, EventArgs e)
+        {
+            IDA_RESULT result;
+
+            btnFlujo.Enabled = true;
+            btnStopFlow.Enabled = false;
+
+            result = EnviaComandoPatron(ComandosPatron.FINALIZA_FLUJO);
+            if (result != IDA_RESULT.IDA_OK)
+            {
+                MessageBox.Show("Fallo al finalizar la prueba de flujo.\r\n" + result);
+                prueba.BorraFlujo();
+                PatronDesconectado();
+                return;
+            }
+
+            if (!prueba.FlujoFinalizado())
+            {
+                DialogResult resultado = MessageBox.Show("La prueba de flujo dio NO APTO.\r\n" +
+                                    "¿Quieres guardarla igualmente?", "¡¡¡ NO APTO !!!",
+                                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (resultado == DialogResult.No)
+                {
+                    prueba.BorraFlujo();
+                    PatronConectado();
+                }
+            }
+        }
+
         /// <summary>
         /// Se desconecta del patron de fprma apropiada e inicializa los controles del Form al modo 'sin patron conectado'.
         /// </summary>
@@ -143,35 +266,6 @@ namespace IDA1
 
             if (!backgroundWorkerChekPat.IsBusy)     //Inicia el chequeo asincrono del status de patron.
                 backgroundWorkerChekPat.RunWorkerAsync(); 
-        }
-
-        private void btnStopOclu_Click(object sender, EventArgs e)
-        {
-            PatronIDA1S.IDA_RESULT result;
-
-            if(patron.Estado == PatronIDA1S.EstadoIDA.OCLUSION)
-            {
-                result = EnviaComandoPatron(ComandosPatron.FINALIZA_OCLUSION);
-                if (result != PatronIDA1S.IDA_RESULT.IDA_OK) MessageBox.Show("Fallo al finalizar la oclusion");
-                if (prueba.DatosOclusion.Last().Tiempo.TotalMinutes > LIMITE_TIEMPO_OCLUSION)
-                {
-                    DialogResult resultado = MessageBox.Show("La prueba de oclusion dio NO APTO.\r\n" +
-                                        "¿Quieres guardarla?", "¡¡¡ NO APTO !!!",
-                                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                    if (resultado == DialogResult.No)
-                    {
-                        prueba.OclusionFinalizada(false);
-                        PatronConectado();
-                    }
-                }
-                else
-                {
-                    prueba.OclusionFinalizada(true);
-                    btnStopOclu.Enabled = false;
-                    btnOclusion.Enabled = false;
-                    btnFlujo.Enabled = true;
-                }
-            }
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -227,30 +321,29 @@ namespace IDA1
         }
         #endregion
 
+        #region BackgroundWorkerChakPat  Se encarga de comprobar el estado del patron cada segundo
         private void backgroundWorkerChekPat_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
-            PatronIDA1S.IDA_RESULT resultado;
+            IDA_RESULT resultado;
 
-            while( !worker.CancellationPending )
+            while (!worker.CancellationPending)
             {
                 if (!detenCheckStatus)
                 {
                     checkStatusActivo = true;
                     resultado = patron.ControlStatus();
                     checkStatusActivo = false;
-                    if (resultado != PatronIDA1S.IDA_RESULT.IDA_OK)
+                    if (resultado != IDA_RESULT.IDA_OK)
                     {
                         e.Result = resultado;
                         return;
                     }
 
-                    worker.ReportProgress(0, resultado);
-
                     Thread.Sleep(1000);   //Comprobamos es estado del patron cada segundo
                 }
             }
-            e.Result = PatronIDA1S.IDA_RESULT.IDA_OK;
+            e.Result = IDA_RESULT.IDA_OK;
         }
 
         private void backgroundWorkerChekPat_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -262,17 +355,17 @@ namespace IDA1
         {
             if (e.Error != null) throw e.Error;
 
-            PatronIDA1S.IDA_RESULT resultado = (PatronIDA1S.IDA_RESULT)e.Result;
+            IDA_RESULT resultado = (IDA_RESULT)e.Result;
 
             switch (resultado)      //El error del patron se devuelve en e.result
             {
-                case PatronIDA1S.IDA_RESULT.IDA_OK:
+                case IDA_RESULT.IDA_OK:
                     break;
-                case PatronIDA1S.IDA_RESULT.IDA_SIN_RESPUESTA:
+                case IDA_RESULT.IDA_SIN_RESPUESTA:
                     MessageBox.Show("El patron no responde.");
                     PatronDesconectado();
                     break;
-                case PatronIDA1S.IDA_RESULT.IDA_FALLO_PATRON:
+                case IDA_RESULT.IDA_FALLO_PATRON:
                     MessageBox.Show("Hubo un fallo en la respuesta del patron.");
                     PatronDesconectado();
                     break;
@@ -283,18 +376,19 @@ namespace IDA1
             }
 
         }
+        #endregion
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             PatronDesconectado();
         }
 
-        private PatronIDA1S.IDA_RESULT EnviaComandoPatron( ComandosPatron comando)
+        private IDA_RESULT EnviaComandoPatron( ComandosPatron comando)
         {
-            PatronIDA1S.IDA_RESULT resultado = PatronIDA1S.IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            IDA_RESULT resultado = IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
 
             detenCheckStatus = true;        //Avisa a ChekPat para que detenga la comprobacion de estado del patron
-            while (checkStatusActivo) { }   //Esperamos a que termine la comprobacion de estado del patron
+            while (checkStatusActivo) {  }   //Esperamos a que termine la comprobacion de estado del patron
 
             switch (comando)
             {
@@ -308,14 +402,17 @@ namespace IDA1
                     resultado = patron.FinalizaOclusion();   
                     break;
                 case ComandosPatron.PREPARA_FLUJO:
+                    resultado = patron.PreparaFlujo();
                     break;
                 case ComandosPatron.INICIA_FLUJO:
+                    resultado = patron.IniciaFlujo();
                     break;
                 case ComandosPatron.FINALIZA_FLUJO:
+                    resultado = patron.FinalizaFlujo();
                     break;
                 case ComandosPatron.DESCONECTA:
                     patron.DesconectaPatron();
-                    resultado = PatronIDA1S.IDA_RESULT.IDA_OK;
+                    resultado = IDA_RESULT.IDA_OK;
                     break;
                 case ComandosPatron.CONECTA:
                     break;
@@ -327,16 +424,39 @@ namespace IDA1
             return resultado;
         }
 
-        public void ProcesaMedida( object sender, PatronIDA1S.MedidaRecibidaEventArgs e)
+        public void ProcesaMedida( object sender, MedidaRecibidaEventArgs e)
         {
+            IDA_RESULT result;
 
             switch (e.estado)
             {
-                case PatronIDA1S.EstadoIDA.FLUJO:
+                case EstadoIDA.FLUJO:
+                    if (e.hayAire)
+                    {
+                        MessageBox.Show("Hay aire en la linea. La prueba no es valida.");
+
+                        result = EnviaComandoPatron(ComandosPatron.FINALIZA_FLUJO);
+                        if ( result != IDA_RESULT.IDA_OK)
+                        {
+                            MessageBox.Show("Fallo al finalizar la prueba de flujo.\r\n" + result);
+                            prueba.BorraFlujo();
+                            PatronDesconectado();
+                            return;
+                        }
+
+                        prueba.BorraFlujo();
+                        PatronConectado();
+                        return;
+                    }
+
                     prueba.AddDatoVolumen(e.tiempo, e.volumen);
+                    if (e.volumen > Prueba.LIMITE_VOLUMEN_FLUJO) 
+                        btnStopFlow_Click(this, e);
                     break;
-                case PatronIDA1S.EstadoIDA.OCLUSION:
+                case EstadoIDA.OCLUSION:
                     prueba.AddDatoOclusion(e.tiempo, e.presion);
+                    if (e.tiempo > Prueba.LIMITE_TIEMPO_OCLUSION)
+                        btnStopOclu_Click(this, e);
                     break;
                 default:
                     MessageBox.Show("Incongluencia en los datos de medida recibidos.");
@@ -345,12 +465,12 @@ namespace IDA1
             }
         }
 
-        private void btnFlujo_Click(object sender, EventArgs e)
+        private void lblApto_TextChanged(object sender, EventArgs e)
         {
-            InicioFlujo inicia = new InicioFlujo();
-            if (inicia.ShowDialog(this) == DialogResult.Cancel) return;
+            Label llamador = sender as Label;
 
-            btnFlujo.Enabled = false;
+            if (llamador.Text == "Apto") llamador.ForeColor = Color.Green;
+            else llamador.ForeColor = Color.Red;
         }
     }
 }

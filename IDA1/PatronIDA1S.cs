@@ -49,8 +49,17 @@ namespace IDA1
         {
             public bool hayAire;
             public EstadoIDA estado;
+            /// <summary>
+            /// Tiempo transcurrido desde el inicio de la prueba en milisegundos.
+            /// </summary>
             public double tiempo;
+            /// <summary>
+            /// Presión actual en mmHg. 
+            /// </summary>
             public short presion;
+            /// <summary>
+            /// Volumen medido desde el inicio de la prueba en ml.
+            /// </summary>
             public double volumen;
 
             public MedidaRecibidaEventArgs()
@@ -70,9 +79,10 @@ namespace IDA1
             Form llamador = MedidaRecibida.Target as Form;
             if (llamador.InvokeRequired)
             {
-                llamador.Invoke(MedidaRecibida, new object[] { this, e });
+                llamador.BeginInvoke(MedidaRecibida, new object[] { this, e });
             }
             else MedidaRecibida?.Invoke(this, e);
+
         }
 
     #endregion
@@ -348,7 +358,7 @@ namespace IDA1
                             return IDA_RESULT.IDA_FALLO_PATRON;
                     }
 
-                    if (resp[14] == 'a' || resp[14] == 'b') HayAire = true;
+                    if (resp[14] == 'a' || resp[14] == 'b' || resp[14] == 'f') HayAire = true;
                     else HayAire = false;
 
                 }
@@ -381,12 +391,11 @@ namespace IDA1
         {
             MedidaRecibidaEventArgs medida = new MedidaRecibidaEventArgs();
 
-            medida.tiempo = Int64.Parse( datos.Substring(0, 8), NumberStyles.AllowHexSpecifier);
-            medida.volumen = Int64.Parse(datos.Substring(8, 8), NumberStyles.AllowHexSpecifier);
-            medida.presion = short.Parse(datos.Substring(16, 4), NumberStyles.AllowHexSpecifier);
+            medida.tiempo = Int64.Parse( datos.Substring(2, 8), NumberStyles.AllowHexSpecifier);
+            medida.volumen = Int64.Parse(datos.Substring(10, 8), NumberStyles.AllowHexSpecifier) / 1000; // El valor devuelto por el patron es en ul. Lo convertimos en ml.
+            medida.presion = short.Parse(datos.Substring(18, 4), NumberStyles.AllowHexSpecifier);
             medida.estado = Estado;
-            medida.hayAire = HayAire;
-
+            medida.hayAire = (datos[1] == 'a' || datos[1] == 'b') ? true : false;
             return medida;
         }
 
@@ -513,7 +522,72 @@ namespace IDA1
 
                 return IDA_RESULT.IDA_FALLO_PATRON;
             }
-            catch (TimeoutException)  { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+        }
+
+        /// <summary>
+        /// Prepara el patron para la prueba de flujo.
+        /// <para>Devuelve true si salio el patron esta listo</para>
+        /// </summary>
+        /// <returns></returns>
+        internal IDA_RESULT PreparaFlujo()
+        {
+            try
+            {
+                puerto.WriteLine("[C1F,control,operador, 1000]");
+                if (ReadLine() == "[OK]")
+                {
+                    Estado = EstadoIDA.FLUJO;
+                    return IDA_RESULT.IDA_OK;
+                }
+
+                return IDA_RESULT.IDA_FALLO_PATRON;
+            }
+            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+        }
+
+        /// <summary>
+        /// Inicia la prueba de flujo en el patron.
+        /// </summary>
+        /// <returns></returns>
+        internal IDA_RESULT IniciaFlujo()
+        {
+            try
+            {
+                puerto.WriteLine("[C1FA,control,operador, 1000]");
+                if (ReadLine() == "[OK]")
+                {
+                    Estado = EstadoIDA.PRE_FLUJO;
+                    return IDA_RESULT.IDA_OK;
+                }
+
+                return IDA_RESULT.IDA_FALLO_PATRON;
+            }
+            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+        }
+
+        /// <summary>
+        /// Finaliza la prueba de flujo del patron.
+        /// </summary>
+        /// <returns></returns>
+        public IDA_RESULT FinalizaFlujo()
+        {
+            string resp;
+
+            try
+            {
+                puerto.WriteLine("[END,1]");
+                resp = ReadLine();
+
+                if (resp == "[OK]")
+                {
+                    Estado = EstadoIDA.CONECTADO;
+                    return IDA_RESULT.IDA_OK;
+                }
+
+                return IDA_RESULT.IDA_FALLO_PATRON;
+            }
+            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
         }
 
         /// <summary>
@@ -605,10 +679,10 @@ namespace IDA1
             string resp;
 
             resp = puerto.ReadLine();
-            while (resp.StartsWith("1:"))
+            while (resp.StartsWith("1"))
             {
                 
-                OnMedidaRecibida( ProcesaDatos(resp.Split(':')[1]) );
+                OnMedidaRecibida( ProcesaDatos(resp));
                 resp = puerto.ReadLine();
             }
             return resp;
