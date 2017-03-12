@@ -309,74 +309,79 @@ namespace IDA1
         /// <param name="e"></param>
         public IDA_RESULT ControlStatus( )
         {
-            string resp;
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
 
-            try
+            puerto.WriteLine("[STATUS]");
+            resp = ReadLine(ref comandos);   
+            if (resp != IDA_RESULT.IDA_OK)
             {
-                puerto.WriteLine("[STATUS]");
-                resp = ReadLine();
-                if (resp.StartsWith("[STAT,"))
-                {
-                    if( resp.Length < 18 )
-                    {
-                        return IDA_RESULT.IDA_FALLO_PATRON;
-                    }
-
-                    switch (resp[6])
-                    {
-                        case ' ':   //En STANDBY
-                        case 'O':   //Oclusion terminada. Estado STANDBY.¿Oclusion en memoria?
-                        case 'V':   //Flujo terminado. Estado STANDBY. ¿Flujo en memoria?
-                            Estado = EstadoIDA.CONECTADO;
-                            break;
-                        case 'T':   //Preparando para oclusion
-                            Estado = EstadoIDA.PRE_OCLUSION;
-                            break;
-                        case 'o':   //Realizando oclusion
-                            Estado = EstadoIDA.OCLUSION;
-                            break;
-                        case 'F':   //Preparando para flujo
-                            Estado = EstadoIDA.PRE_FLUJO;
-                            break;
-                        case 'v':   //Realizando prueba de flujo
-                            Estado = EstadoIDA.FLUJO;
-                            break;
-                        default:
-                            return IDA_RESULT.IDA_FALLO_PATRON;
-                    }
-
-                    switch (resp[10])
-                    {
-                        case 'O':   //Realizando oclusion
-                            Estado = EstadoIDA.OCLUSION;
-                            break;
-                        case 'F':   //Realizando prueba de flujo
-                            Estado = EstadoIDA.FLUJO;
-                            break;
-                        case ' ':   //En STANDBY
-                            Estado = EstadoIDA.CONECTADO;
-                            break;
-                        default:
-                            return IDA_RESULT.IDA_FALLO_PATRON;
-                    }
-
-                    if (resp[14] == 'a' || resp[14] == 'b' || resp[14] == 'f') HayAire = true;
-                    else HayAire = false;
-
-                }
-                else  return IDA_RESULT.IDA_FALLO_PATRON;
-
-                puerto.WriteLine("[GETBATSTATUS]");
-                resp = ReadLine();
-                if (resp.StartsWith("[BATSTATUS,"))
-                {
-                    // No nos interesa controlar el estado de la bateria de momento
-                }
-                else return IDA_RESULT.IDA_FALLO_PATRON;
-
-                return IDA_RESULT.IDA_OK;
+                Dbg.Write("Error lectura del patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException)   { return IDA_RESULT.IDA_SIN_RESPUESTA;  }
+            if (comandos.Count != 1 || !comandos[0].StartsWith("[STAT,") || comandos?[0].Length < 18)
+            {
+                Dbg.Write("Error parametros recibidos." + comandos[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            switch (comandos[0][6])
+            {
+                case ' ':   //En STANDBY
+                case 'O':   //Oclusion terminada. Estado STANDBY.¿Oclusion en memoria?
+                case 'V':   //Flujo terminado. Estado STANDBY. ¿Flujo en memoria?
+                    Estado = EstadoIDA.CONECTADO;
+                    break;
+                case 'T':   //Preparando para oclusion
+                    Estado = EstadoIDA.PRE_OCLUSION;
+                    break;
+                case 'o':   //Realizando oclusion
+                    Estado = EstadoIDA.OCLUSION;
+                    break;
+                case 'F':   //Preparando para flujo
+                    Estado = EstadoIDA.PRE_FLUJO;
+                    break;
+                case 'v':   //Realizando prueba de flujo
+                    Estado = EstadoIDA.FLUJO;
+                    break;
+                default:
+                    Dbg.Write("Error parametros recibidos." + comandos[0]);
+                    return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            switch (comandos[0][10])
+            {
+                case 'O':   //Realizando oclusion
+                    Estado = EstadoIDA.OCLUSION;
+                    break;
+                case 'F':   //Realizando prueba de flujo
+                    Estado = EstadoIDA.FLUJO;
+                    break;
+                case ' ':   //En STANDBY
+                    Estado = EstadoIDA.CONECTADO;
+                    break;
+                default:
+                    Dbg.Write("Error parametros recibidos." + comandos[0]);
+                    return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            if (comandos[0][14] == 'a' || comandos[0][14] == 'b' || comandos[0][14] == 'f') HayAire = true;
+            else HayAire = false;
+
+            //De momento no nos interesa el estado de la bateria. No lo analizamos
+            //puerto.WriteLine("[GETBATSTATUS]");
+            //resp = ReadLine(ref comandos);
+            //if (resp != IDA_RESULT.IDA_OK)
+            //{
+            //    Dbg.Write("Error lectura del patron: " + resp);
+            //    return resp;
+            //}
+            //if (comandos.Count != 1 || !comandos[0].StartsWith("[BATSTATUS,"))
+            //{
+            //    Dbg.Write("Error parametros recibidos." + comandos[0]);
+            //    return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            //}
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -411,52 +416,60 @@ namespace IDA1
         /// </returns>
         IDA_RESULT CojeDatosPatron()
         {
-            string resp;
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
 
-            try
+            puerto.WriteLine("[GETPARAMS, 0]");
+            resp = ReadLine(ref comandos);   
+            if (resp != IDA_RESULT.IDA_OK)
             {
-                puerto.WriteLine("[GETPARAMS, 0]");
-                resp = ReadLine();   //[P1, Fabricante
-                if(resp.Length < 4) return IDA_RESULT.IDA_FALLO_PATRON;
-                if (resp.Substring(0, 4) != "[P1,") return IDA_RESULT.IDA_FALLO_PATRON;
-                marca = resp.Substring(4, resp.Length - 5);
-
-                resp = ReadLine();  //[P2, Modelo
-                if (resp.Length < 4) return IDA_RESULT.IDA_FALLO_PATRON;
-                if (resp.Substring(0, 4) != "[P2,") return IDA_RESULT.IDA_FALLO_PATRON;
-                modelo = resp.Substring(4, resp.Length - 5);
-
-                resp = ReadLine();  //[P3, Descripcion del patron
-                resp = ReadLine();  //[P4, ??
-
-                resp = ReadLine();  //[P5, Identificador: Modelo + N/S
-                if (resp.Length < 4) return IDA_RESULT.IDA_FALLO_PATRON;
-                if (resp.Substring(0, 4) != "[P5,") return IDA_RESULT.IDA_FALLO_PATRON;
-                identificador = resp.Substring(4, resp.Length - 5);
-
-                puerto.WriteLine("[GETSN,0]");   //Cojemos el numero de serie
-                resp = ReadLine();   //[SN0, Numero de serie del patron.
-                if (resp.Length < 5) return IDA_RESULT.IDA_FALLO_PATRON;
-                if (resp.Substring(0, 5) != "[SN0,") return IDA_RESULT.IDA_FALLO_PATRON;
-                nSerie = resp.Split(',')[1];
-
-                puerto.WriteLine("[POLL]");   //Cojemos el numero de canales
-                resp = ReadLine();   //No nos interesa el dato ya que trabajamos solo con el 1º canal
-                nCanales = resp;
-
-                puerto.WriteLine("[GETSN,1]");   //Cojemos el numero de serie del canal 1
-                resp = ReadLine();    //[SN1,  Numero de serie del canal 1
-                if (resp.Length < 5) return IDA_RESULT.IDA_FALLO_PATRON;
-                if (resp.Substring(0, 5) != "[SN1,") return IDA_RESULT.IDA_FALLO_PATRON;
-                nSerieCanal = resp.Split(',')[1];
+                Dbg.Write("Error lectura del patron: " + resp);
+                return resp;
             }
-            catch (System.TimeoutException)
+
+            if (comandos.Count < 5 ||
+                comandos?[0].StartsWith("[P1,") != true ||
+                comandos?[1].StartsWith("[P2,") != true ||
+                comandos?[2].StartsWith("[P3,") != true ||
+                comandos?[3].StartsWith("[P4,") != true ||
+                comandos?[4].StartsWith("[P5,") != true )
             {
-                resp = puerto.ReadExisting();
-                Debug.WriteLine("TimeOut..." + resp);
-                Estado = EstadoIDA.SIN_RESPUESTA;
-                return IDA_RESULT.IDA_SIN_RESPUESTA;
+                Dbg.Write("Error parametros recibidos." + comandos[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
             }
+
+            marca = comandos[0].Substring(4, comandos[0].Length - 5);   //[P1, Marca
+            modelo = comandos[1].Substring(4, comandos[1].Length - 5);  //[P2, Modelo
+            identificador = comandos[4].Substring(4, comandos[4].Length - 5);  //[P5, Identificador: Modelo + N/S
+
+            puerto.WriteLine("[GETSN,0]");   //Cojemos el numero de serie
+            resp = ReadLine(ref comandos);   //[SN0, Numero de serie del patron.
+            if (resp != IDA_RESULT.IDA_OK)
+            {
+                Dbg.Write("Error lectura del patron: " + resp);
+                return resp;
+            }
+            if (comandos?[0].StartsWith("[SN0,") != true)
+            {
+                Dbg.Write("Error parametros recibidos." + comandos[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+            nSerie = comandos[0].Split(',')[1];
+
+            puerto.WriteLine("[GETSN,1]");   //Cojemos el numero de serie del canal 1
+            resp = ReadLine(ref comandos);   //[SN1,  Numero de serie del canal 1
+            if (resp != IDA_RESULT.IDA_OK)
+            {
+                Dbg.Write("Error lectura del patron: " + resp);
+                return resp;
+            }
+            if (comandos?[0].StartsWith("[SN1,") != true)
+            {
+                Dbg.Write("Error parametros recibidos." + comandos[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+            nSerieCanal = comandos[0].Split(',')[1];
+
             return IDA_RESULT.IDA_OK;
         }
 
@@ -467,18 +480,25 @@ namespace IDA1
         /// <returns></returns>
         public IDA_RESULT PreparaOclusion()
         {
-            try
-            {
-                puerto.WriteLine("[C1O,numero control, operador, 10000]");
-                if (ReadLine() == "[OK]")
-                {
-                    Estado = EstadoIDA.PRE_OCLUSION;
-                    return IDA_RESULT.IDA_OK;
-                }
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
 
-                return IDA_RESULT.IDA_FALLO_PATRON;
+            puerto.WriteLine("[C1O,numero control, operador, 10000]");
+            resp = ReadLine(ref comandos);
+            if (resp != IDA_RESULT.IDA_OK)
+            {
+                Dbg.Write("Error patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException)  { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+
+            if (comandos.Count != 1 || comandos?[0] != "[OK]")
+            {
+                Dbg.Write("Comando erroneo: " + comandos?[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            Estado = EstadoIDA.PRE_OCLUSION;
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -488,19 +508,25 @@ namespace IDA1
         /// <returns></returns>
         public IDA_RESULT IniciaOclusion()
         {
-            try
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
+
+            puerto.WriteLine("[C1O,numero control, operador, 10000]");
+            resp = ReadLine(ref comandos);
+            if (resp != IDA_RESULT.IDA_OK)
             {
-                puerto.WriteLine("[C1O,numero control, operador, 10000]");
-                if (ReadLine() == "[OK]")
-                {
-                    Estado = EstadoIDA.OCLUSION;
-                    return IDA_RESULT.IDA_OK;
-                }
-
-                return IDA_RESULT.IDA_FALLO_PATRON;
-
+                Dbg.Write("Error patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException)  { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+
+            if (comandos.Count != 1 || comandos?[0] != "[OK]")
+            {
+                Dbg.Write("Comando erroneo: " + comandos?[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            Estado = EstadoIDA.OCLUSION;
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -509,22 +535,25 @@ namespace IDA1
         /// <returns></returns>
         public IDA_RESULT FinalizaOclusion()
         {
-            string resp;
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
 
-            try
+            puerto.WriteLine("[END,1]");
+            resp = ReadLine(ref comandos);
+            if (resp != IDA_RESULT.IDA_OK)
             {
-                puerto.WriteLine("[END,1]");
-                resp = ReadLine();
-
-                if (resp == "[OK]")
-                {
-                    Estado = EstadoIDA.CONECTADO;
-                    return IDA_RESULT.IDA_OK;
-                }
-
-                return IDA_RESULT.IDA_FALLO_PATRON;
+                Dbg.Write("Error patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+
+            if (comandos.Count != 1 || comandos?[0] != "[OK]")
+            {
+                Dbg.Write("Comando erroneo: " + comandos?[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            Estado = EstadoIDA.CONECTADO;
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -534,18 +563,25 @@ namespace IDA1
         /// <returns></returns>
         internal IDA_RESULT PreparaFlujo()
         {
-            try
-            {
-                puerto.WriteLine("[C1F,control,operador, 1000]");
-                if (ReadLine() == "[OK]")
-                {
-                    Estado = EstadoIDA.FLUJO;
-                    return IDA_RESULT.IDA_OK;
-                }
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
 
-                return IDA_RESULT.IDA_FALLO_PATRON;
+            puerto.WriteLine("[C1F,control,operador, 1000]");
+            resp = ReadLine(ref comandos);
+            if (resp != IDA_RESULT.IDA_OK)
+            {
+                Dbg.Write("Error patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+
+            if (comandos.Count != 1 || comandos?[0] != "[OK]")
+            {
+                Dbg.Write("Comando erroneo: " + comandos?[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            Estado = EstadoIDA.FLUJO;
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -554,18 +590,25 @@ namespace IDA1
         /// <returns></returns>
         internal IDA_RESULT IniciaFlujo()
         {
-            try
+            List<string> comandos = new List<string>();
+            IDA_RESULT resp;
+                
+            puerto.WriteLine("[C1FA,control,operador, 1000]");
+            resp = ReadLine(ref comandos);
+            if ( resp != IDA_RESULT.IDA_OK )
             {
-                puerto.WriteLine("[C1FA,control,operador, 1000]");
-                if (ReadLine() == "[OK]")
-                {
-                    Estado = EstadoIDA.PRE_FLUJO;
-                    return IDA_RESULT.IDA_OK;
-                }
-
-                return IDA_RESULT.IDA_FALLO_PATRON;
+                Dbg.Write("Error patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+
+            if (comandos.Count != 1 || comandos?[0] != "[OK]")
+            {
+                Dbg.Write("Comando erroneo: " + comandos?[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            Estado = EstadoIDA.FLUJO;
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -577,21 +620,22 @@ namespace IDA1
             List<string> comandos = new List<string>();
             IDA_RESULT resp;
 
-            try
+            puerto.WriteLine("[END,1]");
+            resp = ReadLine(ref comandos);
+            if(resp != IDA_RESULT.IDA_OK)
             {
-                puerto.WriteLine("[END,1]");
-                resp = ReadLine(ref comandos);
-
-                if( comandos.Count > 1 || )
-                if (resp == "[OK]")
-                {
-                    Estado = EstadoIDA.CONECTADO;
-                    return IDA_RESULT.IDA_OK;
-                }
-
-                return IDA_RESULT.IDA_FALLO_PATRON;
+                Dbg.Write("Error patron: " + resp);
+                return resp;
             }
-            catch (TimeoutException) { return IDA_RESULT.IDA_SIN_RESPUESTA; }
+
+            if( comandos.Count != 1 || comandos?[0] != "[OK]")
+            {
+                Dbg.Write("Comando erroneo: " + comandos?[0]);
+                return IDA_RESULT.IDA_COMANDO_DESCONOCIDO;
+            }
+
+            Estado = EstadoIDA.CONECTADO;
+            return IDA_RESULT.IDA_OK;
         }
 
         /// <summary>
@@ -683,18 +727,17 @@ namespace IDA1
         #endregion
 
         /// <summary>
-        /// Lee los datos recibidos del patron. Si es una medida, la procesa y proboca el evento <see cref="MedidaRecibida"/>
-        /// <para>Devuleve <see cref="IDA_RESULT.IDA_OK"/> o <see cref="IDA_RESULT.IDA_LECTURA_ERRONEA"/></para>
+        /// Lee los datos recibidos del patron. Si es una medida, la procesa y proboca el evento MedidaRecibida.
+        /// <para>Devuleve <see cref="IDA_RESULT.IDA_OK"/> o <see cref="IDA_RESULT.IDA_LECTURA_ERRONEA"/>, <see cref="IDA_RESULT.IDA_SIN_RESPUESTA"/> </para>
         /// </summary>
-        /// <param name="comandos"> Referencia de un List<string> donde se guardaran los camandos recibidos.</param>
-        /// <returns><see cref="IDA_RESULT.IDA_OK"/> o <see cref="IDA_RESULT.IDA_LECTURA_ERRONEA"/></returns>
+        /// <param name="comandos"> Referencia de un <see cref="List{string}"/> donde se guardaran los camandos recibidos.</param>
         private IDA_RESULT ReadLine(ref List<string> comandos)
         {
             string resp;
 
             do
             {
-                resp = puerto.ReadLine();
+                try { resp = puerto.ReadLine(); } catch { return IDA_RESULT.IDA_SIN_RESPUESTA; }
                 while (resp[0] == '1')
                 {
                     if(resp.Length != 22)
@@ -704,7 +747,7 @@ namespace IDA1
                     }
 
                     OnMedidaRecibida(ProcesaDatos(resp));
-                    resp = puerto.ReadLine();
+                    try { resp = puerto.ReadLine(); } catch { return IDA_RESULT.IDA_SIN_RESPUESTA; }
                 }
 
                 if (resp[0] == '[') comandos.Add(resp);
